@@ -98,8 +98,16 @@ function drawIcon(size) {
 }
 
 mkdirSync(new URL("../public/icons/", import.meta.url), { recursive: true });
-for (const size of [192, 512, 180]) {
-  const file = new URL(`../public/icons/icon-${size}.png`, import.meta.url);
-  writeFileSync(file, drawIcon(size));
-  console.log("erstellt:", `public/icons/icon-${size}.png`);
+
+const targets = [
+  [192, "public/icons/icon-192.png"],
+  [512, "public/icons/icon-512.png"],
+  [180, "public/icons/icon-180.png"],
+  [192, "app/icon.png"],
+  [180, "app/apple-icon.png"],
+];
+
+for (const [size, target] of targets) {
+  writeFileSync(new URL(`../${target}`, import.meta.url), drawIcon(size));
+  console.log("erstellt:", target);
 }

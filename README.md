@@ -87,6 +87,12 @@ VAPID Schlüssel erzeugen und die drei ausgegebenen Zeilen in `.env.local`
 npm run vapid
 ```
 
+Die App Symbole werden aus dem Code erzeugt, falls sie fehlen:
+
+```bash
+npm run icons
+```
+
 Schema anlegen und Server starten:
 
 ```bash

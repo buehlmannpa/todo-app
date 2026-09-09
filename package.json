@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "db:setup": "node --env-file=.env.local scripts/setup-db.mjs",
-    "vapid": "node scripts/generate-vapid.mjs"
+    "vapid": "node scripts/generate-vapid.mjs",
+    "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",
