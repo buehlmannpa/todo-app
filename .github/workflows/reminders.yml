@@ -1,0 +1,43 @@
+# Prueft alle fuenf Minuten, ob Aufgaben faellig sind, und stoesst die
+# Push Mitteilungen an. Notwendig, weil Vercel im Hobby Tarif nur einen
+# taeglichen Cron Job erlaubt.
+#
+# Dafuer braucht es zwei Repository Secrets unter
+# Settings, Secrets and variables, Actions:
+#   APP_URL      die Adresse der App, zum Beispiel https://klar.vercel.app
+#   CRON_SECRET  derselbe Wert wie in den Umgebungsvariablen auf Vercel
+
+name: Erinnerungen pruefen
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: reminders
+  cancel-in-progress: false
+
+jobs:
+  reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Endpunkt aufrufen
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$APP_URL" ]; then
+            echo "Das Secret APP_URL fehlt."
+            exit 1
+          fi
+          status=$(curl --silent --show-error --max-time 30 \
+            --output antwort.json --write-out "%{http_code}" \
+            --header "Authorization: Bearer $CRON_SECRET" \
+            "${APP_URL%/}/api/cron/reminders")
+          echo "HTTP $status"
+          cat antwort.json
+          echo
+          if [ "$status" != "200" ]; then
+            exit 1
+          fi

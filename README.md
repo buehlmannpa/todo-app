@@ -45,8 +45,8 @@ die Karten hindurchschimmert. Hell und dunkel folgen automatisch dem System.
 **Mitteilungen**
 
 Fällige Aufgaben melden sich per Push Mitteilung auf dem Handy und auf dem
-Desktop, auch bei geschlossener App. Ein Cron Job auf Vercel prüft regelmässig,
-was ansteht. Massgebend ist die Erinnerung, sonst der Termin. Ganztägige
+Desktop, auch bei geschlossener App. Ein Cron Job prüft regelmässig, was
+ansteht. Massgebend ist die Erinnerung, sonst der Termin. Ganztägige
 Aufgaben melden sich am Morgen ihres Termins.
 
 **Konto**
@@ -113,20 +113,52 @@ Treiber. Mit `DB_DRIVER=pg` oder `DB_DRIVER=neon` lässt sich das erzwingen.
    * `AUTH_SECRET`, ein zufälliger Wert mit mindestens 32 Zeichen
    * `NEXT_PUBLIC_VAPID_PUBLIC_KEY` und `VAPID_PRIVATE_KEY` aus `npm run vapid`
    * `VAPID_SUBJECT`, zum Beispiel `mailto:ihre@adresse.ch`
+   * `CRON_SECRET`, ein weiterer zufälliger Wert. Sobald diese Variable
+     gesetzt ist, schickt Vercel sie bei jedem Cron Aufruf als
+     `Authorization: Bearer <CRON_SECRET>` mit, und der Endpunkt weist alles
+     andere ab.
 4. Einmalig das Schema anlegen, lokal mit der Produktionsadresse:
 
    ```bash
    DATABASE_URL="<Adresse aus Vercel>" node scripts/setup-db.mjs
    ```
 
-5. Deployen. Der Cron Job aus `vercel.json` prüft alle fünf Minuten, ob etwas
-   fällig ist. Vercel setzt `CRON_SECRET` selber und schützt den Endpunkt damit.
+5. Deployen.
 
-Hinweis zum Tarif: im Hobby Tarif führt Vercel Cron Jobs nur einmal täglich aus.
-Für Mitteilungen im Minutentakt braucht es den Pro Tarif. Alternativ lässt sich
-`https://<domain>/api/cron/reminders` von einem beliebigen externen Dienst
-aufrufen, dann muss der Aufruf den Kopf `Authorization: Bearer <CRON_SECRET>`
-mitschicken.
+### Wie oft die Mitteilungen geprüft werden
+
+Der Cron Job in `vercel.json` läuft einmal täglich um 05:00 UTC, also um 06:00
+oder 07:00 Schweizer Zeit. Das ist bewusst so gewählt, denn **der Hobby Tarif
+von Vercel erlaubt nur einen täglichen Cron Job**. Ein häufigerer Ausdruck wird
+beim Deployment mit einer Fehlermeldung abgewiesen.
+
+Für Erinnerungen im Tagesverlauf braucht es einen Takt von wenigen Minuten.
+Dafür gibt es drei Wege:
+
+**Weg A, GitHub Actions, kostenlos und bereits vorbereitet**
+
+Im Repository liegt `.github/workflows/reminders.yml`. Der Workflow ruft den
+Endpunkt alle fünf Minuten auf. Dafür unter **Settings, Secrets and variables,
+Actions** zwei Secrets anlegen:
+
+* `APP_URL`, die Adresse der App, zum Beispiel `https://klar.vercel.app`
+* `CRON_SECRET`, derselbe Wert wie in den Umgebungsvariablen auf Vercel
+
+Unter **Actions** lässt sich der Workflow mit **Run workflow** sofort testen.
+Zwei Eigenheiten von GitHub: geplante Läufe können sich bei hoher Last um einige
+Minuten verspäten, und in einem Repository ohne Aktivität schaltet GitHub sie
+nach 60 Tagen ab. Für den Eigengebrauch ist das in der Regel unproblematisch.
+
+**Weg B, externer Dienst**
+
+Jeder Cron Dienst, zum Beispiel cron-job.org, kann
+`https://<domain>/api/cron/reminders` aufrufen. Der Aufruf muss den Kopf
+`Authorization: Bearer <CRON_SECRET>` mitschicken.
+
+**Weg C, Pro Tarif**
+
+Mit dem Pro Tarif von Vercel lässt sich in `vercel.json` wieder
+`*/5 * * * *` eintragen, dann entfällt alles Weitere.
 
 ## Als App aufs Handy
 
