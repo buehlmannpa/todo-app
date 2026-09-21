@@ -133,32 +133,43 @@ von Vercel erlaubt nur einen täglichen Cron Job**. Ein häufigerer Ausdruck wir
 beim Deployment mit einer Fehlermeldung abgewiesen.
 
 Für Erinnerungen im Tagesverlauf braucht es einen Takt von wenigen Minuten.
-Dafür gibt es drei Wege:
+Dafür gibt es drei Wege.
 
-**Weg A, GitHub Actions, kostenlos und bereits vorbereitet**
+**Weg A, externer Cron Dienst, empfohlen**
+
+Jeder Cron Dienst, zum Beispiel das kostenlose cron-job.org, kann
+`https://<domain>/api/cron/reminders` aufrufen. Der Aufruf muss den Kopf
+`Authorization: Bearer <CRON_SECRET>` mitschicken. Das ist der einzige Weg,
+der den Takt zuverlässig einhält.
+
+**Weg B, GitHub Actions, vorbereitet, aber ungenau**
 
 Im Repository liegt `.github/workflows/reminders.yml`. Der Workflow ruft den
-Endpunkt alle fünf Minuten auf. Dafür unter **Settings, Secrets and variables,
-Actions** zwei Secrets anlegen:
+Endpunkt auf, sobald unter **Settings, Secrets and variables, Actions** zwei
+Secrets gesetzt sind:
 
 * `APP_URL`, die Adresse der App, zum Beispiel `https://klar.vercel.app`
 * `CRON_SECRET`, derselbe Wert wie in den Umgebungsvariablen auf Vercel
 
-Unter **Actions** lässt sich der Workflow mit **Run workflow** sofort testen.
-Zwei Eigenheiten von GitHub: geplante Läufe können sich bei hoher Last um einige
-Minuten verspäten, und in einem Repository ohne Aktivität schaltet GitHub sie
-nach 60 Tagen ab. Für den Eigengebrauch ist das in der Regel unproblematisch.
+Fehlen die Secrets, macht der Workflow nichts und endet trotzdem erfolgreich,
+damit GitHub keine Fehlermails verschickt. Dasselbe gilt, wenn die App nicht
+antwortet: im Protokoll erscheint eine Warnung, der Lauf gilt aber als
+erfolgreich.
 
-**Weg B, externer Dienst**
+Wichtig zu wissen: der Eintrag `*/5 * * * *` ist für GitHub nur ein Wunsch.
+In Repositories mit wenig Aktivität führt GitHub geplante Workflows stark
+verzögert aus, gemessen wurden rund vier Läufe pro Tag statt 288. Zudem
+schaltet GitHub geplante Workflows nach 60 Tagen ohne Aktivität ganz ab. Für
+punktgenaue Erinnerungen taugt dieser Weg darum nicht, als grober Nachlauf
+schon.
 
-Jeder Cron Dienst, zum Beispiel cron-job.org, kann
-`https://<domain>/api/cron/reminders` aufrufen. Der Aufruf muss den Kopf
-`Authorization: Bearer <CRON_SECRET>` mitschicken.
+Wer ihn gar nicht will, löscht die Datei oder schaltet den Workflow unter
+**Actions** über das Menü rechts oben mit **Disable workflow** ab.
 
-**Weg C, Pro Tarif**
+**Weg C, Pro Tarif von Vercel**
 
-Mit dem Pro Tarif von Vercel lässt sich in `vercel.json` wieder
-`*/5 * * * *` eintragen, dann entfällt alles Weitere.
+Mit dem Pro Tarif lässt sich in `vercel.json` wieder `*/5 * * * *` eintragen,
+dann entfällt alles Weitere.
 
 ## Als App aufs Handy
 
